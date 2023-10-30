@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/juliofernandolepore/go-mongo-twitter/awsgo"
+	"github.com/juliofernandolepore/go-mongo-twitter/sm"
 	"golang.org/x/net/context"
 )
 
@@ -18,7 +19,7 @@ func ExLambda(ctx context.Context, request events.APIGatewayProxyRequest) (*even
 
 	awsgo.IniciarAWS()
 
-	if !VaidoParametro() { // no existen variables de entorno (false)
+	if !ValidoParametro() { // no existen variables de entorno (false)
 		res = &events.APIGatewayProxyResponse{
 			StatusCode: 400,
 			Body:       "Error en las variables de entorno. deben incluir secretname, bucket name, urlPrefix",
@@ -28,20 +29,20 @@ func ExLambda(ctx context.Context, request events.APIGatewayProxyRequest) (*even
 		}
 		return res, nil
 	}
-	if VaidoParametro() {
+	secretModel, err := sm.GetSecret(os.Getenv("secretName"))
+	if err != nil {
 		res = &events.APIGatewayProxyResponse{
-			StatusCode: 200,
-			Body:       "las variables existen",
+			StatusCode: 400,
+			Body:       "Error en la lectura del secret" + err.Error(),
 			Headers: map[string]string{
 				"Content-Type": "application/json",
 			},
 		}
 		return res, nil
 	}
-	return res, nil
 }
 
-func VaidoParametro() bool {
+func ValidoParametro() bool {
 	_, traerParametro := os.LookupEnv("secretName")
 	if !traerParametro { //return false (env non exist)
 		return traerParametro
